@@ -97,6 +97,14 @@ public class HttpDebugLogger : DelegatingHandler
 
         using (var scope = _logger?.BeginScope(scopeArgs))
         {
+            // Print because not all log providers accept the scope.
+            // TODO: determine if there is a better way of handling this.
+            _logger?.Log(opts.LogLevel, "HTTP request beginning.");
+            foreach (var item in scopeArgs)
+            {
+                _logger?.Log(opts.LogLevel, "{key}: {value}", item.Key, item.Value);
+            }
+
             if (opts.LogRequestHeaders)
             {
                 var builder = new StringBuilder();
