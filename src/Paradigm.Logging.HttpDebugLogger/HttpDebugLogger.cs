@@ -68,7 +68,7 @@ public class HttpDebugLogger : DelegatingHandler
             new KeyValuePair<string, object>("Request", $"{request.Method} {request.RequestUri?.PathAndQuery} {request.RequestUri?.Scheme}/{request.Version}")
         };
 
-        using (var scope = _logger.BeginScope(scopeArgs))
+        using (var scope = _logger?.BeginScope(scopeArgs))
         {
             if (opts.LogRequestHeaders)
             {
