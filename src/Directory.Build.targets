@@ -1,0 +1,57 @@
+﻿<Project>
+  <PropertyGroup>
+    <ReplacePackageReferences>true</ReplacePackageReferences>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CINugetBuild)'==''">
+    <CINugetBuild>false</CINugetBuild>
+  </PropertyGroup>
+
+  <!--Should be set by TeamCity, but is blank in Visual Studio.-->
+  <PropertyGroup Condition="'$(DockerBuild)'==''">
+    <DockerBuild>false</DockerBuild>
+  </PropertyGroup>
+
+  <!--If we are doing a NuGet build, we don't want to replace PackageReferences with ProjectReferences.-->
+  <PropertyGroup Condition="'$(CINugetBuild)'=='true'">
+    <ReplacePackageReferences>false</ReplacePackageReferences>
+  </PropertyGroup>
+
+  <!--If we are building one of the Docker projects, we want to keep project references instead of NuGet references.-->
+  <PropertyGroup Condition="'$(DockerBuild)'=='true'">
+    <ReplacePackageReferences>true</ReplacePackageReferences>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ReplacePackageReferences>true</ReplacePackageReferences>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(ReplacePackageReferences) AND '$(SolutionPath)' != '' AND '$(SolutionPath)' != '*undefined*' AND Exists('$(SolutionPath)')">
+      <PropertyGroup>
+        <SolutionFileContent>$([System.IO.File]::ReadAllText($(SolutionPath)))</SolutionFileContent>
+        <SmartSolutionDir>$([System.IO.Path]::GetDirectoryName( $(SolutionPath) ))</SmartSolutionDir>
+        <RegexPattern>(?&lt;="[PackageName]", ")(.*)(?=", ")</RegexPattern>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <!-- Keep the identity of the  packagereference -->
+        <SmartPackageReference Include="@(PackageReference)">
+          <PackageName>%(Identity)</PackageName>
+          <InSolution>$(SolutionFileContent.Contains('\%(Identity).csproj'))</InSolution>
+        </SmartPackageReference>
+
+        <!-- Filter them by mapping them to another itemGroup using the WithMetadataValue item function -->
+        <PackageInSolution Include="@(SmartPackageReference -> WithMetadataValue('InSolution', True) )">
+          <Pattern>$(RegexPattern.Replace('[PackageName]','%(PackageName)') )</Pattern>
+          <SmartPath>$([System.Text.RegularExpressions.Regex]::Match( '$(SolutionFileContent)', '%(Pattern)' ))</SmartPath>
+        </PackageInSolution>
+
+        <ProjectReference  Include="@(PackageInSolution -> '$(SmartSolutionDir)\%(SmartPath)' )" />
+
+        <!-- Remove the package references that are now referenced as projects -->
+        <PackageReference Remove="@(PackageInSolution -> '%(PackageName)' )" />
+      </ItemGroup>
+    </When>
+  </Choose>
+</Project>

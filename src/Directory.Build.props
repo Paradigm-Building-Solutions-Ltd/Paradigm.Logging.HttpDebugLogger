@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)\..\eng\Analyzers.props" />
+  <PropertyGroup Condition="'$(BuildNo)'==''">
+    <BuildNo>0</BuildNo>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ReplacePackageReferences>true</ReplacePackageReferences>
+    <MainVer>1.0</MainVer>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CINugetBuild)'==''">
+    <CINugetBuild>false</CINugetBuild>
+    <ReplacePackageReferences>false</ReplacePackageReferences>
+  </PropertyGroup>
+  
+	<PropertyGroup>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)\..\artifacts</ArtifactsPath>
+    <!-- new in .NET 8: https://learn.microsoft.com/en-us/dotnet/core/sdk/artifacts-output -->
+    <!-- <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/$(MSBuildProjectName)</IntermediateOutputPath> -->
+  </PropertyGroup>
+  
+  <PropertyGroup>
+  <OnMasterBranch>false</OnMasterBranch>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(GitBranch)' == 'master' Or '$(GitBranch)' == 'main'">  
+  <OnMasterBranch>true</OnMasterBranch>
+  </PropertyGroup>
+    
+  <PropertyGroup>
+    <Language>C#</Language>
+    <LangVersion>Latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <Authors>Paradigm Building Solutions Ltd</Authors>
+    <VersionPrefix>$(MainVer).$(BuildNo)</VersionPrefix>
+    <VersionSuffix Condition="'$(OnMasterBranch)'=='false'">$(GitBranch)</VersionSuffix>
+    <DependantPackageVersion>$(MainVer)</DependantPackageVersion>
+    <DependantPackageVersion Condition="'$(OnMasterBranch)'=='false'">$(MainVer).0-$(GitBranch)</DependantPackageVersion>
+    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>  
+</Project>
