@@ -24,13 +24,36 @@ public class HttpDebugLoggerConfiguration
 /// <summary>
 /// Logs HTTP request details to the ILogger instance provided.
 /// </summary>
-public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebugLoggerConfiguration> options) : DelegatingHandler
+public class HttpDebugLogger : DelegatingHandler
 {
+    private static readonly string[] _textContentTypes = ["html", "text", "xml", "json", "txt", "x-www-form-urlencoded"];
+    private readonly ILogger<HttpDebugLogger> _logger;
+    private readonly IOptions<HttpDebugLoggerConfiguration> _options;
+
+    /// <summary>
+    /// Create an HttpDebugLogger instance.
+    /// </summary>
+    public HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebugLoggerConfiguration> options)
+    {
+        _logger = logger;
+        _options = options;
+    }
+
+    /// <summary>
+    /// Create an HttpDebugLogger instance with an inner handler to allow chaining handlers.
+    /// </summary>
+    public HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebugLoggerConfiguration> options, HttpMessageHandler innerHandler)
+        : base(innerHandler)
+    {
+        _logger = logger;
+        _options = options;
+    }
+
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        var opts = options.Value;
+        var opts = _options.Value;
 
         var scopeArgs = new List<KeyValuePair<string, object>>
         {
@@ -39,7 +62,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
             new KeyValuePair<string, object>("Request", $"{request.Method} {request.RequestUri?.PathAndQuery} {request.RequestUri?.Scheme}/{request.Version}")
         };
 
-        using (var scope = logger.BeginScope(scopeArgs))
+        using (var scope = _logger.BeginScope(scopeArgs))
         {
             if (opts.LogRequestHeaders)
             {
@@ -50,7 +73,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                     builder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                 }
 
-                logger?.Log(opts.LogLevel, "Headers:\n{headers}", builder.ToString());
+                _logger?.Log(opts.LogLevel, "Headers:\n{headers}", builder.ToString());
             }
 
             if (request.Content != null)
@@ -64,7 +87,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                         builder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                     }
 
-                    logger?.Log(opts.LogLevel, "Content headers:\n{result}", builder.ToString());
+                    _logger?.Log(opts.LogLevel, "Content headers:\n{result}", builder.ToString());
                 }
 
                 if (opts.LogRequestContent)
@@ -73,7 +96,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                     {
                         var result = await request.Content.ReadAsStringAsync();
 
-                        logger?.Log(opts.LogLevel, "Content:\n{result}", result);
+                        _logger?.Log(opts.LogLevel, "Content:\n{result}", result);
                     }
                 }
             }
@@ -83,9 +106,9 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
 
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            logger?.Log(opts.LogLevel, "Request took {ms} ms", stopwatch.ElapsedMilliseconds);
+            _logger?.Log(opts.LogLevel, "Request took {ms} ms", stopwatch.ElapsedMilliseconds);
 
-            logger?.Log(opts.LogLevel, "Response: {scheme}/{version} {code} {reason}", request.RequestUri?.Scheme.ToUpper(), response.Version, response.StatusCode, response.ReasonPhrase);
+            _logger?.Log(opts.LogLevel, "Response: {scheme}/{version} {code} {reason}", request.RequestUri?.Scheme.ToUpper(), response.Version, response.StatusCode, response.ReasonPhrase);
 
             if (opts.LogResponseHeaders)
             {
@@ -95,7 +118,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                     builder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                 }
 
-                logger?.Log(opts.LogLevel, "Response headers:\n{result}", builder.ToString());
+                _logger?.Log(opts.LogLevel, "Response headers:\n{result}", builder.ToString());
             }
 
             if (opts.LogResponseContent)
@@ -111,7 +134,7 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                             builder.AppendLine($"{header.Key}: {string.Join(", ", header.Value)}");
                         }
 
-                        logger?.Log(opts.LogLevel, "Response content headers:\n{response}", builder.ToString());
+                        _logger?.Log(opts.LogLevel, "Response content headers:\n{response}", builder.ToString());
                     }
 
                     if (response.Content is StringContent || IsTextBasedContentType(response.Headers) || IsTextBasedContentType(response.Content.Headers))
@@ -121,19 +144,17 @@ public class HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebug
                         var result = await response.Content.ReadAsStringAsync(cancellationToken);
                         readContentStopwatch.Stop();
 
-                        logger?.Log(opts.LogLevel, "Content:\n{content}", result);
-                        logger?.Log(opts.LogLevel, "Content took {ms} ms to read.", readContentStopwatch.ElapsedMilliseconds);
+                        _logger?.Log(opts.LogLevel, "Content:\n{content}", result);
+                        _logger?.Log(opts.LogLevel, "Content took {ms} ms to read.", readContentStopwatch.ElapsedMilliseconds);
                     }
                 }
             }
 
-            logger?.Log(opts.LogLevel, "Request ended.");
+            _logger?.Log(opts.LogLevel, "Request ended.");
 
             return response;
         }
     }
-
-    private static readonly string[] _textContentTypes = ["html", "text", "xml", "json", "txt", "x-www-form-urlencoded"];
 
     private static bool IsTextBasedContentType(HttpHeaders headers)
     {
