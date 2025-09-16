@@ -55,6 +55,12 @@ public class HttpDebugLogger : DelegatingHandler
     {
         var opts = _options.Value;
 
+        if (opts.LogLevel == LogLevel.None)
+        {
+            // break early, don't add additional processing load
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
         var scopeArgs = new List<KeyValuePair<string, object>>
         {
             new KeyValuePair<string, object>("RequestId", Guid.NewGuid()),
