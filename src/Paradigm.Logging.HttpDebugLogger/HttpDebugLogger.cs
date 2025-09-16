@@ -12,12 +12,39 @@ namespace Paradigm.Logging.HttpDebugLogger;
 /// </summary>
 public class HttpDebugLoggerConfiguration
 {
+    /// <summary>
+    /// If true, request headers will be logged.
+    /// </summary>
     public bool LogRequestHeaders { get; set; } = true;
+
+    /// <summary>
+    /// If true, request content headers will be logged.
+    /// </summary>
     public bool LogRequestContentHeaders { get; set; } = true;
+
+    /// <summary>
+    /// If true, response headers will be logged.
+    /// </summary>
     public bool LogResponseHeaders { get; set; } = true;
+
+    /// <summary>
+    /// If true, response content headers will be logged.
+    /// </summary>
     public bool LogResponseContentHeaders { get; set; } = true;
+
+    /// <summary>
+    /// If true, request content will be logged.
+    /// </summary>
     public bool LogRequestContent { get; set; } = true;
+
+    /// <summary>
+    /// If true, response content will be logged.
+    /// </summary>
     public bool LogResponseContent { get; set; } = true;
+
+    /// <summary>
+    /// Log level for log output. If set to <see cref="LogLevel.None"/>, <see cref="HttpDebugLogger"/> will not perform any actions.
+    /// </summary>
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
 }
 
