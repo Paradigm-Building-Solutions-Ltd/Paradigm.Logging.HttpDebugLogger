@@ -27,13 +27,13 @@ public class HttpDebugLoggerConfiguration
 public class HttpDebugLogger : DelegatingHandler
 {
     private static readonly string[] _textContentTypes = ["html", "text", "xml", "json", "txt", "x-www-form-urlencoded"];
-    private readonly ILogger<HttpDebugLogger> _logger;
+    private readonly ILogger<HttpDebugLogger>? _logger;
     private readonly IOptions<HttpDebugLoggerConfiguration> _options;
 
     /// <summary>
     /// Create an HttpDebugLogger instance.
     /// </summary>
-    public HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebugLoggerConfiguration> options)
+    public HttpDebugLogger(ILogger<HttpDebugLogger>? logger, IOptions<HttpDebugLoggerConfiguration> options)
     {
         _logger = logger;
         _options = options;
@@ -42,7 +42,7 @@ public class HttpDebugLogger : DelegatingHandler
     /// <summary>
     /// Create an HttpDebugLogger instance with an inner handler to allow chaining handlers.
     /// </summary>
-    public HttpDebugLogger(ILogger<HttpDebugLogger> logger, IOptions<HttpDebugLoggerConfiguration> options, HttpMessageHandler innerHandler)
+    public HttpDebugLogger(ILogger<HttpDebugLogger>? logger, IOptions<HttpDebugLoggerConfiguration> options, HttpMessageHandler innerHandler)
         : base(innerHandler)
     {
         _logger = logger;
